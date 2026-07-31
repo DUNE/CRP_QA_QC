@@ -1,0 +1,65 @@
+README
+
+
+command: ‘connect CTS’
+
+starts 
+1) data logging and sensor display window
+2) system status message window
+3) keep interactive command interface in terminal window
+
+
+
+launcher script ('connect') is located in:
+
+/usr/local/bin/connect
+
+# --- Configuration ---
+LOGGER_SCRIPT="/home/lsu-neutrino/Desktop/CTS/serial_logger.py"
+PLOTTER_SCRIPT="/home/lsu-neutrino/Desktop/CTS/realtime_plotter.py"
+PIPE_PATH="/home/lsu-neutrino/Desktop/CTS/logs/arduino_input.pipe"
+PLOTTER_ERR_LOG="/home/lsu-neutrino/Desktop/CTS/logs/plotter_errors.log"
+# ---------------------
+
+
+Other Setup NOTES:
+
+1. Install Dependencies
+ You need the pyserial library to talk to the Arduino. Open your terminal and run:
+ "pip install pyserial"
+
+2. The Python Script:
+The script is: serial_logger.py.
+Make sure to update your serial port (usually /dev/ttyACM0 or /dev/ttyUSB0) and matching baud rate as needed.
+
+Default settings:
+# --- Configuration ---
+SERIAL_PORT = "/dev/ttyACM0"  # Adjust to your port
+BAUD_RATE = 115200  # Adjust to match Arduino Serial.begin()
+LOG_DIR = "./logs"  # Directory to store logs
+
+3. Environment setup requirements:
+a) Add /home/$USER/.local/bin to your PATH requires you to update your shell configuration file. This ensures the change remains active every time you open a new terminal.
+
+e.g. for Bash (/bin/bash):
+"echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc"
+
+b) Apply the Changes:
+    To make the changes take effect immediately in your current terminal window without logging out, run: "source ~/.bashrc"   [If using bash]
+
+
+---------
+for debugging it may be useful to run the serial logger by itself:
+
+i) Run the Script
+Navigate to the directory where you saved serial_logger.py and execute it using Python 3:
+"python3 serial_logger.py"
+
+ii) How to Monitor and Stop it:
+To view the data live: Open a second terminal window, navigate to the same folder, and watch the logs generate in real-time using:
+"tail -f logs/CTS_Arduino_log_*.csv"
+
+To stop the logger: Go back to your main terminal window running the Python script and press Ctrl + C. It will safely close the active log file and release the serial port.
+------------
+
+
