@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# --- Configuration ---
+LOGGER_SCRIPT="/home/lsu-neutrino/Desktop/CTS/serial_logger.py"
+PLOTTER_SCRIPT="/home/lsu-neutrino/Desktop/CTS/realtime_plotter.py"
+PIPE_PATH="/home/lsu-neutrino/Desktop/CTS/logs/arduino_input.pipe"
+PLOTTER_ERR_LOG="/home/lsu-neutrino/Desktop/CTS/logs/plotter_errors.log"
+# ---------------------
+
+if [ "$1" != "CTS" ]; then
+    echo "Usage: connect CTS"
+    exit 1
+fi
+
+mkdir -p "$(dirname "$PIPE_PATH")"
+rm -f "$PIPE_PATH"
+
+echo "Starting Arduino Logger for CTS..."
+python3 "$LOGGER_SCRIPT" &
+LOGGER_PID=$!
+
+sleep 2
+
+if ! kill -0 $LOGGER_PID 2>/dev/null; then
+    echo "Error: Failed to start logger.py. Check your serial port connection."
+    exit 1
+fi
+echo "Logger running in background (PID: $LOGGER_PID)."
+
+echo "Launching Real-Time Plotter..."
+python3 -u "$PLOTTER_SCRIPT" > "$PLOTTER_ERR_LOG" 2>&1 &
+PLOTTER_PID=$!
+
+# FIX: Open the pipe for writing on File Descriptor 3 to keep it persistently alive
+exec 3> "$PIPE_PATH"
+
+echo "Entering interactive mode. Type 'exit' or 'quit' to close everything."
+echo "------------------------------------------------------------------"
+
+while true; do
+    read -p "Arduino Command > " cmd
+    
+    if [ "$cmd" = "exit" ] || [ "$cmd" = "quit" ]; then
+        echo "Exiting command prompt..."
+        break
+    fi
+    
+    if [ -n "$cmd" ]; then
+        if [ -p "$PIPE_PATH" ]; then
+            # Direct the command through our permanent File Descriptor 3
+            echo "$cmd" >&3
+        else
+            echo "Error: Command pipe not found. Is the logger still running?"
+        fi
+    fi
+done
+
+echo "Stopping background processes..."
+# Close the persistent file descriptor safely
+exec 3>&-
+
+kill -15 $PLOTTER_PID 2>/dev/null
+kill -15 $LOGGER_PID 2>/dev/null
+
+wait $PLOTTER_PID 2>/dev/null
+wait $LOGGER_PID 2>/dev/null
+
+echo "Disconnected."
